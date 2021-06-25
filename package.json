@@ -3,20 +3,96 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build-storybook": "build-storybook",
+    "dev": "next dev",
+    "format": "prettier --write '**/*.{md,json,js,jsx,ts,tsx}'",
+    "lint": "yarn eslint ./src --ext .js,.jsx,.ts,.tsx",
+    "precommit": "yarn format",
+    "scan": "sonar-scanner",
+    "start": "next src",
+    "storybook": "start-storybook -p 6006",
+    "test": "jest --config jest.config.json --env=jest-environment-jsdom-sixteen"
   },
   "dependencies": {
+    "@datadog/browser-core": "^1.26.1",
+    "@datadog/browser-rum": "^1.25.2",
+    "@lendi-ui/button": "^8.2.17",
+    "@lendi-ui/color": "^5.1.2",
+    "@lendi-ui/dropdown": "^4.3.1",
+    "@lendi-ui/grid": "^4.1.7",
+    "@lendi-ui/icon": "^9.9.16",
+    "@lendi-ui/radio": "^3.1.5",
+    "@lendi-ui/spacing": "^7.1.2",
+    "@lendi-ui/text-input": "^4.3.0",
+    "@lendi-ui/theme": "^9.2.2",
+    "@lendi-ui/tooltip": "^3.3.0",
+    "@lendi-ui/typography": "^5.6.0",
+    "@lendi/babel-preset-nextjs": "^2.0.0",
+    "@lendi/core-constants": "^4.0.0",
+    "@lendi/lala-react": "^10.3.4",
+    "@lendi/lendi-lead-library": "^1.9.1",
+    "@lendi/navbar": "^6.4.3",
+    "@lendi/prettier-config": "^1.0.1",
+    "@types/styled-components": "4.1.18",
     "next": "11.0.1",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "react-hook-form": "^7.9.0",
+    "react-number-format": "^4.6.3",
+    "styled-components": "^4"
   },
   "devDependencies": {
+    "@lendi/typescript-config": "^1.0.0",
+    "@storybook/addon-actions": "^6.2.9",
+    "@storybook/addon-essentials": "^6.2.9",
+    "@storybook/addon-info": "^5.3.21",
+    "@storybook/addon-links": "^6.2.9",
+    "@storybook/react": "^6.2.9",
+    "@testing-library/jest-dom": "^5.13.0",
+    "@testing-library/react": "^11.2.7",
+    "@testing-library/user-event": "^13.1.9",
+    "@types/jest": "^24.0.9",
     "@types/react": "17.0.11",
+    "@typescript-eslint/eslint-plugin": "^4.26.0",
+    "@typescript-eslint/parser": "^4.26.1",
     "eslint": "7.29.0",
     "eslint-config-next": "11.0.1",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-config-standard-with-typescript": "^18.0.2",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jest": "^23.20.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-react": "^7.24.0",
+    "eslint-plugin-react-hooks": "^4.1.0",
+    "eslint-plugin-unused-imports": "^1.1.1",
+    "husky": "^1.1.4",
+    "jest": "^24.1.0",
+    "jest-environment-jsdom-sixteen": "^2.0.0",
+    "lint-staged": "^7.3.0",
+    "prettier": "^1.15.2",
+    "prettier-check": "^2.0.0",
     "typescript": "4.3.4"
-  }
+  },
+  "lint-staged": {
+    "*.{md,json,js,jsx,ts,tsx}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "engines": {
+    "node": ">=8.11.0"
+  },
+  "browserslist": [
+    "last 3 version",
+    "not dead",
+    "not op_mini all"
+  ]
 }

@@ -1,0 +1,281 @@
+steps:
+  - label: ':eslint: Lint'
+    key: 'lint'
+    agents:
+      queue: build
+    commands:
+      - ./ci/lint.sh
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+          propagate-environment: true
+
+  - label: ':white_check_mark: Test'
+    key: 'test'
+    agents:
+      queue: build
+    commands:
+      - ./ci/test.sh
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+          propagate-environment: true
+
+  - label: ":sonarqube: Sonarqube"
+    key: sonarqube
+    depends_on:
+      - step: lint
+      - step: test
+    agents:
+      queue: build
+    commands:
+      - echo "--- Scanning"
+      - ./ci/scan.sh
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: "NPM_TOKEN"
+      - lendi-au/ssm#0.5.5:
+          ssmkey: "SONAR_SCANNER_PASSWORD"
+      - lendi-au/ssm#0.5.5:
+          ssmkey: "platform/NPM_TOKEN"
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - "NPM_TOKEN"
+            - "LENDI_NPM_TOKEN"
+            - "SONAR_SCANNER_PASSWORD"
+          propagate-environment: true
+    soft_fail: # Ensures a Sonarqube error does not fail the pipeline
+      - exit_status: "*"  
+
+  - label: ':construction_worker: Build development'
+    key: 'build-dev'
+    agents:
+      queue: build
+    depends_on:
+      - step: lint
+      - step: test
+    commands:
+      - ./ci/build.sh development
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - lendi-au/npm-global#1.1.0:
+          env: 'NPM_TOKEN'
+          package: '@lendi/lsd'
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+            - 'BUILDKITE_BRANCH'
+          propagate-environment: true
+    artifact_paths:
+      - build/**/*
+
+  - label: ':rocket: Deploy development'
+    key: 'deploy-dev'
+    agents:
+      queue: build
+    depends_on:
+      - step: build-dev
+    commands:
+      - 'buildkite-agent artifact download build/** .'
+      - ./ci/deploy.sh development
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'BUILDKITE_BRANCH'
+            - 'BUILDKITE'
+            - 'DATADOG_API_KEY'
+            - 'DATADOG_APP_KEY'
+            - 'AWS_REGION'
+            - 'LENDI_ECR_REGISTRY'
+            - 'AWS_DEFAULT_REGION'
+          propagate-environment: true
+
+  - label: ':construction_worker: Build Staging'
+    key: 'build-staging'
+    agents:
+      queue: build
+    branches: 'master'
+    depends_on:
+      - step: deploy-dev
+    commands:
+      - ./ci/build.sh staging
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - lendi-au/npm-global#1.1.0:
+          env: 'NPM_TOKEN'
+          package: '@lendi/lsd'
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+          propagate-environment: true
+    artifact_paths:
+      - build/**/*
+
+  - label: ':rocket: Deploy Staging'
+    key: 'deploy-staging'
+    agents:
+      queue: build
+    branches: 'master'
+    depends_on:
+      - step: build-staging
+    commands:
+      - 'buildkite-agent artifact download build/** .'
+      - ./ci/deploy.sh staging
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+            - 'BUILDKITE_BRANCH'
+            - 'BUILDKITE'
+            - 'DATADOG_API_KEY'
+            - 'DATADOG_APP_KEY'
+            - 'AWS_REGION'
+            - 'LENDI_ECR_REGISTRY'
+            - 'AWS_DEFAULT_REGION'
+          propagate-environment: true
+
+  # # ----------------------------------
+  # # e2e testing in Staging
+  # # ----------------------------------
+  # - trigger: "e2e-testing"
+  #   label: ":cypress: Run BAA E2E Testing"
+  #   branches: 'master'
+  #   key: e2e-testing
+  #   allow_dependency_failure: false
+  #   depends_on:
+  #     - step: deploy-staging
+  #   build:
+  #     env:
+  #       ONLY_TEST_BAA: "true"
+
+  - wait
+  - label: ':construction_worker: Build production'
+    key: 'build-production'
+    agents:
+      queue: build
+    branches: 'master'
+    # depends_on:
+    #   - step: e2e-testing
+    commands:
+      - ./ci/build.sh production
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - lendi-au/npm-global#1.1.0:
+          env: 'NPM_TOKEN'
+          package: '@lendi/lsd'
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+          propagate-environment: true
+    artifact_paths:
+      - build/**/*
+
+  - block: ':question: Deploy to Production'
+    key: deploy-prod
+    branches: 'master'
+    prompt: 'Are you sure you want to deploy to production?'
+    fields:
+      - text: 'Comments'
+        key: 'comments-4-production'
+        required: true
+        hint: 'Comments for deploying to the production'
+
+  - label: ':rocket: Deploy Production'
+    key: 'deploy-production'
+    agents:
+      queue: build
+    branches: 'master'
+    depends_on:
+      - step: build-production
+      - step: deploy-prod
+    commands:
+      - 'buildkite-agent artifact download build/** .'
+      - ./ci/deploy.sh production
+      - ./ci/tag-release.sh
+    env:
+      BITBUCKET_REPO_OWNER: "lendi-dev"
+      BITBUCKET_REPO_SLUG: "stamp-duty-calculator"
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'PLAT_GIT_CLIENT_KEY'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'PLAT_GIT_CLIENT_SECRET'
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+            - 'BUILDKITE_BRANCH'
+            - 'BUILDKITE'
+            - 'DATADOG_API_KEY'
+            - 'DATADOG_APP_KEY'
+            - 'AWS_REGION'
+            - 'LENDI_ECR_REGISTRY'
+            - 'PLAT_GIT_CLIENT_KEY'
+            - 'PLAT_GIT_CLIENT_SECRET'
+            - 'AWS_DEFAULT_REGION'
+          propagate-environment: true

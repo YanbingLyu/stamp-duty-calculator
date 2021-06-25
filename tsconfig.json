@@ -1,19 +1,20 @@
 {
+  "extends": "./node_modules/@lendi/typescript-config/tsconfig.json",
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "src",
+    "jsx": "preserve",
+    "lib": ["dom", "esnext"],
     "noEmit": true,
+    "allowJs": true,
+    "skipLibCheck": false,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "strictNullChecks": true,
     "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve"
+    "types": ["node", "jest", "react", "react-dom", "@testing-library/jest-dom"],
+    "resolveJsonModule": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "typings/**/*.d.ts"]
 }

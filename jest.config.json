@@ -1,0 +1,20 @@
+{
+  "globals": {
+    "__PATH_PREFIX__": ""
+  },
+  "setupFilesAfterEnv": ["<rootDir>/test/test-setup.js"],
+  "transform": {
+    "^.+\\.jsx?$": "babel-jest",
+    "^.+\\.tsx?$": "ts-jest"
+  },
+  "transformIgnorePatterns": ["node_modules/(?!(gatsby)/)"],
+  "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+  "testPathIgnorePatterns": ["/node_modules/", "/templates/", "/.cache", "/cypress/"],
+  "moduleNameMapper": {
+    ".+\\.(css|styl|less|sass|scss)$": "identity-obj-proxy",
+    ".+\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/__mocks__/fileMock.ts"
+  },
+  "collectCoverage": true,
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx"],
+  "testURL": "http://localhost"
+}

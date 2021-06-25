@@ -1,0 +1,49 @@
+steps:
+  - label: ':construction_worker: Build Staging'
+    key: 'build-staging'
+    agents:
+      queue: build
+    commands:
+      - ./ci/pull-latest.sh
+      - ./ci/build.sh staging stamp-duty-calulator
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - lendi-au/npm-global#1.1.0:
+          env: 'NPM_TOKEN'
+          package: '@lendi/lsd'
+    artifact_paths:
+      - build/**/*
+  - wait
+  - label: ':rocket: Deploy Staging'
+    key: 'deploy-staging'
+    agents:
+      queue: build
+    concurrency: 1
+    concurrency_group: 'stamp-duty-calulator/staging/deploy'
+    commands:
+      - 'buildkite-agent artifact download build/** .'
+      - ./ci/deploy.sh staging stamp-duty-calulator
+    plugins:
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'NPM_TOKEN'
+      - lendi-au/ssm#0.5.5:
+          ssmkey: 'platform/NPM_TOKEN'
+          exportname: LENDI_NPM_TOKEN
+      - docker#v3.4.0:
+          image: 291089888569.dkr.ecr.ap-southeast-2.amazonaws.com/platform-tools:latest
+          workdir: /app
+          environment:
+            - 'NPM_TOKEN'
+            - 'LENDI_NPM_TOKEN'
+            - 'BUILDKITE_BRANCH'
+            - 'BUILDKITE'
+            - 'DATADOG_API_KEY'
+            - 'DATADOG_APP_KEY'
+            - 'AWS_REGION'
+            - 'LENDI_ECR_REGISTRY'
+            - 'AWS_DEFAULT_REGION'
+          propagate-environment: true
